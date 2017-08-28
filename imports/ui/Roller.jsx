@@ -23,7 +23,7 @@ export default class Roller extends Component {
     this.dice = [];
 
     this.state = {
-      deskTexture: {},
+      deskTextureLoaded: false,
       cubeRotation: new THREE.Euler(),  
     };
     
@@ -45,6 +45,7 @@ export default class Roller extends Component {
     this.label_color = '#aaaaaa';
     this.dice_color = '#202020';
     this.spot_light_color = 'white';
+    this.ambient_light_color = '#d7ad59';
     this.selector_back_colors = {
       color: 0x404040,
       shininess: 0,
@@ -64,7 +65,6 @@ export default class Roller extends Component {
     this.deskSpecular = 'white';
     this.deskShininess = 2;
     this.repeat = new THREE.Vector2(40, 40);
-    this.deskTexture;
 
     this.test = false;
 
@@ -137,12 +137,6 @@ export default class Roller extends Component {
       return new THREE.Mesh(this.d6_geometry, materials);
     };
 
-
-
-    // init 
-    this.dimensions.w = width / 4;
-    this.dimensions.h = height / 4;
-
     // window.addEventListener('resize', () => {
     //   const newW = `${window.innerWidth - 1}px`;
     //   const newH = `${window.innerHeight - 1}px`;
@@ -150,84 +144,136 @@ export default class Roller extends Component {
     //   container.style.height = newH;
     //   this.reinit(container);
     // });
-
+    
     // this.use_adapvite_timestep = true;
     // this.animate_selector = true;
-    this.world = new CANNON.World();
-    this.dices = [];
-    this.meshRefs = [];
-
-
-
-
-    // reinit
 
     this.cw = width / 2;
     this.ch = height / 2;
-    if (this.dimensions) {
-      this.w = this.dimensions.w;
-      this.h = this.dimensions.h;
-    } else {
-      this.w = this.cw;
-      this.h = this.ch;
-    }
+    
+    this.w = width / 4;
+    this.h = height / 4;
 
+    this.mw = Math.max(this.w, this.h);
 
-    this.aspect = Math.min(this.cw / this.w, this.ch / this.h);
+    this.aspect = 2;
     this.scale = Math.sqrt((this.w * this.w) + (this.h * this.h)) / 8;
 
     this.wh = this.ch / this.aspect / Math.tan((10 * Math.PI) / 180);
 
     this.cameraPosition = new THREE.Vector3(0, 0, this.wh);
+    this.lightPosition = new THREE.Vector3(-this.mw / 2, this.mw / 2, this.mw * 2);
+    this.lightTarget = new THREE.Vector3(0, 0, 0);
 
-    // this.createLight();
-
-    // this.camera.updateProjectionMatrix();
-    // this.renderer.setSize(this.cw * 2, this.ch * 2);
-    // this.renderer.render(this.scene, this.camera);
+    // cannon
+    this.dices = [];
+    this.meshRefs = [];
+    
+    const world = new CANNON.World();
     
     
+    
+    const initCannon = () => {
+      world.gravity.set(0, 0, -9.8 * 800);
+      world.broadphase = new CANNON.NaiveBroadphase();
+      world.solver.iterations = 16;
+      
+      this.dice_body_material = new CANNON.Material();
+      this.desk_body_material = new CANNON.Material();
+      this.barrier_body_material = new CANNON.Material();
+      world.addContactMaterial(
+        new CANNON.ContactMaterial(
+          this.desk_body_material, 
+          this.dice_body_material, 
+          { 
+            friction: 0.01, 
+            restitution: 0.5
+          }
+        )
+      );
+      // world.addContactMaterial(new CANNON.ContactMaterial(
+      //   this.barrier_body_material, this.dice_body_material, 0, 1.0));
+      // world.addContactMaterial(new CANNON.ContactMaterial(
+      //   this.dice_body_material, this.dice_body_material, 0, 0.5));
+
+      world.add(new CANNON.Body(0, new CANNON.Plane(), this.desk_body_material));
+      let barrier;
+      barrier = new CANNON.Body(0, new CANNON.Plane(), this.barrier_body_material);
+      barrier.quaternion.setFromAxisAngle(new CANNON.Vec3(1, 0, 0), Math.PI / 2);
+      barrier.position.set(0, this.h * 0.93, 0);
+      world.add(barrier);
+
+      barrier = new CANNON.Body(0, new CANNON.Plane(), this.barrier_body_material);
+      barrier.quaternion.setFromAxisAngle(new CANNON.Vec3(1, 0, 0), -Math.PI / 2);
+      barrier.position.set(0, -this.h * 0.93, 0);
+      world.add(barrier);
+
+      barrier = new CANNON.Body(0, new CANNON.Plane(), this.barrier_body_material);
+      barrier.quaternion.setFromAxisAngle(new CANNON.Vec3(0, 1, 0), -Math.PI / 2);
+      barrier.position.set(this.w * 0.93, 0, 0);
+      world.add(barrier);
+
+      barrier = new CANNON.Body(0, new CANNON.Plane(), this.barrier_body_material);
+      barrier.quaternion.setFromAxisAngle(new CANNON.Vec3(0, 1, 0), Math.PI / 2);
+      barrier.position.set(-this.w * 0.93, 0, 0);
+      world.add(barrier);
 
 
 
-    // this.world.gravity.set(0, 0, -9.8 * 800);
-    // this.world.broadphase = new CANNON.NaiveBroadphase();
-    // this.world.solver.iterations = 16;
+      // const mass = 5;
 
-    // const ambientLight = new THREE.AmbientLight(0xd7ad59);
-    // this.scene.add(ambientLight);
+      // const boxShape = new CANNON.Box(new CANNON.Vec3(0.25, 0.25, 0.25));
 
-    // this.dice_body_material = new CANNON.Material();
-    // const desk_body_material = new CANNON.Material();
-    // const barrier_body_material = new CANNON.Material();
-    // this.world.addContactMaterial(new CANNON.ContactMaterial(
-    //   desk_body_material, this.dice_body_material, 0.01, 0.5));
-    // this.world.addContactMaterial(new CANNON.ContactMaterial(
-    //   barrier_body_material, this.dice_body_material, 0, 1.0));
-    // this.world.addContactMaterial(new CANNON.ContactMaterial(
-    //   this.dice_body_material, this.dice_body_material, 0, 0.5));
+      // for (let i = 0; i < N; ++i) {
+      //   const boxBody = new CANNON.Body({
+      //     mass,
+      //   });
 
-    // this.world.add(new CANNON.RigidBody(0, new CANNON.Plane(), desk_body_material));
-    // let barrier;
-    // barrier = new CANNON.RigidBody(0, new CANNON.Plane(), barrier_body_material);
-    // barrier.quaternion.setFromAxisAngle(new CANNON.Vec3(1, 0, 0), Math.PI / 2);
-    // barrier.position.set(0, this.h * 0.93, 0);
-    // this.world.add(barrier);
+      //   boxBody.addShape(boxShape);
+      //   boxBody.position.set(
+      //     -2.5 + Math.random() * 5,
+      //     2.5 + Math.random() * 5,
+      //     -2.5 + Math.random() * 5);
+      //   world.addBody(boxBody);
+      //   bodies.push(boxBody);
 
-    // barrier = new CANNON.RigidBody(0, new CANNON.Plane(), barrier_body_material);
-    // barrier.quaternion.setFromAxisAngle(new CANNON.Vec3(1, 0, 0), -Math.PI / 2);
-    // barrier.position.set(0, -this.h * 0.93, 0);
-    // this.world.add(barrier);
+      //   meshRefs.push((mesh) => {
+      //     if (mesh) {
+      //       mesh.userData._bodyIndex = i;
 
-    // barrier = new CANNON.RigidBody(0, new CANNON.Plane(), barrier_body_material);
-    // barrier.quaternion.setFromAxisAngle(new CANNON.Vec3(0, 1, 0), -Math.PI / 2);
-    // barrier.position.set(this.w * 0.93, 0, 0);
-    // this.world.add(barrier);
+      //       this.meshes.push(mesh);
+      //     }
+      //   });
+      // }
 
-    // barrier = new CANNON.RigidBody(0, new CANNON.Plane(), barrier_body_material);
-    // barrier.quaternion.setFromAxisAngle(new CANNON.Vec3(0, 1, 0), Math.PI / 2);
-    // barrier.position.set(-this.w * 0.93, 0, 0);
-    // this.world.add(barrier);
+      // const groundShape = new CANNON.Plane();
+      // const groundBody = new CANNON.Body({ mass: 0 });
+
+      // groundBody.addShape(groundShape);
+      // groundBody.quaternion.setFromAxisAngle(new CANNON.Vec3(1, 0, 0), -Math.PI / 2);
+
+      // // WAIT A MINUTE I CAN CREATE A REACT RENDERER FOR CANNON
+      // // patience is a virtue
+      // // breathe in breathe out breathe in breathe out
+      // // let's finish this one first
+
+      // world.addBody(groundBody);
+
+      // const shape = new CANNON.Sphere(0.1);
+      // const jointBody = new CANNON.Body({ mass: 0 });
+      // jointBody.addShape(shape);
+      // jointBody.collisionFilterGroup = 0;
+      // jointBody.collisionFilterMask = 0;
+
+      // world.addBody(jointBody);
+
+      // this.jointBody = jointBody;
+    };
+
+    initCannon();
+
+
+    
 
     // this.last_time = 0;
     // this.running = false;
@@ -286,81 +332,37 @@ export default class Roller extends Component {
 
   }
 
-  // createLight() {
-  //   const mw = Math.max(this.w, this.h);
-  //   if (this.light) this.scene.remove(this.light);
-  //   this.light = new THREE.SpotLight(this.spot_light_color, 1.5);
-  //   this.light.position.set(-mw / 2, mw / 2, mw * 2);
-  //   this.light.target.position.set(0, 0, 0);
-  //   this.light.distance = mw * 3;
-  //   this.light.castShadow = true;
-  //   this.light.shadow.camera.near = mw / 10;
-  //   this.light.shadow.camera.far = mw * 5;
-  //   this.light.shadow.camera.fov = 50;
-  //   this.light.shadow.camera.visible = true;
-  //   this.light.shadow.bias = 0.001;
-  //   this.light.shadow.mapSize.width = 2048;
-  //   this.light.shadow.mapSize.height = 2048;
-  //   this.scene.add(this.light);
+
+  // componentDidMount() {
+  //   const {
+  //     desk,
+  //   } = this.refs;
+
+  //   this.loader = new THREE.TextureLoader();
+  //   const that = this;
+  //   this.loader.load(
+  //     // resource URL
+  //     './img/pattern.png',
+  //     // Function when resource is loadede
+  //     function ( texture ) {
+  //       // do something with the texture
+  //       // that.deskTexture
+
+  //       // desk.material.map = texture;
+  //       // var material = new THREE.MeshBasicMaterial( {
+  //       //   map: texture
+  //       // } );
+  //     },
+  //     // Function called when download progresses
+  //     function ( xhr ) {
+  //       console.log( (xhr.loaded / xhr.total * 100) + '% loaded' );
+  //     },
+  //     // Function called when download errors
+  //     function ( xhr ) {
+  //       console.log( 'An error happened' );
+  //     }
+  //   );
   // }
-
-  // createDesk() {
-  //   if (this.desk) return;
-
-  //   this.deskGeometry = new THREE.PlaneGeometry(this.dimensions.w * 2, this.dimensions.h * 2, 1, 1);
-
-  //   const deskTexture = new THREE.TextureLoader().load('./img/pattern.png', (texture) => {
-  //     texture.wrapS = THREE.RepeatWrapping;
-  //     texture.wrapT = THREE.RepeatWrapping;
-  //     texture.repeat.set(40, 40);
-  //   });
-
-  //   this.deskMaterial = new THREE.MeshPhongMaterial({
-  //     color: 'purple',
-  //     specular: 'white',
-  //     shininess: 2,
-  //     map: deskTexture,
-  //   });
-
-
-  //   this.desk = new THREE.Mesh(this.deskGeometry, this.deskMaterial);
-  //   // new THREE.MeshPhongMaterial({ color: that.desk_color }));
-  //   this.desk.receiveShadow = true;
-  //   this.scene.add(this.desk);
-  // }
-  componentDidMount() {
-
-    const {
-      desk
-    } = this.refs;
-
-    this.loader = new THREE.TextureLoader();
-    const that = this;
-    this.loader.load(
-      // resource URL
-      './img/pattern.png',
-      // Function when resource is loadede
-      function ( texture ) {
-        // do something with the texture
-        // that.deskTexture
-        console.log('texture loaded');
-        console.log(desk);
-        console.log(desk.material);
-        // desk.material.map = texture;
-        // var material = new THREE.MeshBasicMaterial( {
-        //   map: texture
-        // } );
-      },
-      // Function called when download progresses
-      function ( xhr ) {
-        console.log( (xhr.loaded / xhr.total * 100) + '% loaded' );
-      },
-      // Function called when download errors
-      function ( xhr ) {
-        console.log( 'An error happened' );
-      }
-    );
-  }
 
 
   render() {
@@ -371,19 +373,11 @@ export default class Roller extends Component {
     } = this.props;
 
     const {
-      // clickMarkerVisible,
-      // clickMarkerPosition,
-
-      // meshStates,
+      scene
+    } = this.refs;
+    
+    const {
     } = this.state;
-
-
-
-    // PerspectiveCamera(20, this.cw / this.ch, 1, this.wh * 1.3);
-    // // this.camera.position.z = this.wh;
-    // this.cameraPosition = new THREE.Vector3(0, 0, this.wh);
-
-
 
     return (
       <div ref="container">
@@ -398,29 +392,37 @@ export default class Roller extends Component {
           shadowMapEnabled
           shadowMapType={this.shadow_map_type}
         >
-          <resources>
-            {/* <texture
-              resourceId="deskTexture"
-              url="./img/pattern.png"
-              wrapS={this.wrapping}
-              wrapT={this.wrapping}
-              repeat={this.repeat}
-            /> */}
-            <meshPhongMaterial
-              resourceId="deskMaterial"
-              color={this.deskColor}
-              specular={this.deskSpecular}
-              shininess={this.deskShininess}
-            />
-          </resources>
-          <scene>
+          <scene
+            ref='scene'
+          >
             <perspectiveCamera
               name="camera"
               fov={20}
-              aspect={this.cw / this.ch}
+              aspect={width / height}
               near={1}
               far={this.wh*1.3}
               position={this.cameraPosition}
+            />
+            <spotLight
+              color={this.spot_light_color}
+              intensity={1.5}
+              distance={this.mw * 3}
+
+              castShadow
+
+              shadowMapWidth={1024}
+              shadowMapHeight={1024}
+
+              shadowBias={0.0001}
+              shadowCameraFar={this.mw * 5}
+              shadowCameraNear={this.mw / 10}
+              shadowCameraFov={50}
+
+              position={this.lightPosition}
+              lookAt={this.lightTarget}
+            />
+            <ambientLight
+              color={this.ambient_light_color}
             />
             <mesh rotation={this.state.cubeRotation}>
               <boxGeometry width={100} height={100} depth={50} />
@@ -430,13 +432,24 @@ export default class Roller extends Component {
               ref='desk'
               receiveShadow
             >
-              <planeGeometry 
-                width={this.dimensions.w * 2} 
-                height={this.dimensions.h * 2}
+              <planeGeometry
+                width={this.w*2}
+                height={this.h*2}
                 widthSegments={1}
                 heightSegments={1}
               />
-              <meshBasicMaterial color={0xff0000} />
+              <meshPhongMaterial
+                color={this.deskColor}
+                specular={this.deskSpecular}
+                shininess={this.deskShininess}
+              >
+                <texture 
+                  url="img/pattern.png"
+                  wrapS={this.wrapping}
+                  wrapT={this.wrapping}
+                  repeat={this.repeat}
+                />
+              </meshPhongMaterial>
             </mesh>
           </scene>
         </React3>

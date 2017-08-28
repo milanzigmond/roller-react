@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
 
 import Roller from './Roller';
+import Geometries from './Geometries';
 
 // App component - represents the whole app
 export default class App extends Component {
@@ -30,6 +31,11 @@ export default class App extends Component {
         height={window.innerHeight}
         roll={[1, 2, 3, 4, 5, 6]}
       />
+
+      // <Geometries
+      //   width={window.innerWidth}
+      //   height={window.innerHeight}
+      // />
     );
   }
 }
