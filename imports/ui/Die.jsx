@@ -5,18 +5,11 @@ import PropTypes from 'prop-types';
 
 class Die extends React.Component {
   static propTypes = {
-
-    // set: PropTypes.number.isRequired,
-    // pos: PropTypes.number.isRequired,
-    // velocity: PropTypes.number.isRequired,
-    // angle: PropTypes.number.isRequired,
-    // axis: PropTypes.number.isRequired,
-
-    // position: PropTypes.instanceOf(THREE.Vector3).isRequired,
-    // quaternion: PropTypes.instanceOf(THREE.Quaternion).isRequired,
-    // meshes: PropTypes.arrayOf(PropTypes.instanceOf(THREE.Mesh)).isRequired,
+    position: PropTypes.instanceOf(THREE.Vector3).isRequired,
+    quaternion: PropTypes.instanceOf(THREE.Quaternion).isRequired,
+    dices: PropTypes.arrayOf(PropTypes.instanceOf(THREE.Mesh)).isRequired,
+    geometry: PropTypes.instanceOf(THREE.Geometry).isRequired,
     // bodyIndex: PropTypes.number.isRequired,
-
     // onMouseDown: PropTypes.func.isRequired,
   };
 
@@ -26,13 +19,10 @@ class Die extends React.Component {
     } = this.refs;
 
     const {
-      bodyIndex,
-      meshes,
+      dices,
     } = this.props;
 
-    mesh.userData._bodyIndex = bodyIndex;
-
-    meshes.push(mesh);
+    dices.push(mesh);
   }
 
   componentWillUnmount() {
@@ -41,23 +31,22 @@ class Die extends React.Component {
     } = this.refs;
 
     const {
-      meshes,
+      dices,
     } = this.props;
 
-    meshes.splice(meshes.indexOf(mesh), 1);
+    dices.splice(dices.indexOf(mesh), 1);
   }
-
-  _onMouseDown = (event, intersection) => {
-    event.preventDefault();
-
-    this.props.onMouseDown(this.refs.mesh.userData._bodyIndex, intersection);
-  };
 
   render() {
     const {
       position,
       quaternion,
     } = this.props;
+
+    const {
+      vertices,
+      faces
+    } = this.props.geometry
 
     return (<mesh
       position={position}
@@ -66,14 +55,14 @@ class Die extends React.Component {
       ref="mesh"
 
       castShadow
-
-      onMouseDown={this._onMouseDown}
+      receiveShadow
     >
-      <geometryResource
-        resourceId="cubeGeo"
+      <geometry
+        vertices={vertices}
+        faces={faces}
       />
       <materialResource
-        resourceId="cubeMaterial"
+        resourceId="dieMaterial"
       />
     </mesh>);
   }

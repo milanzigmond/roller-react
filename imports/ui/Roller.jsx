@@ -5,6 +5,8 @@ import React3 from 'react-three-renderer';
 import * as THREE from 'three';
 import CANNON from 'cannon';
 
+import Die from './Die'
+
 export default class Roller extends Component {
   static propTypes = {
     width: PropTypes.number.isRequired,
@@ -370,27 +372,31 @@ export default class Roller extends Component {
       return new THREE.Mesh(this.d6_geometry, materials);
     }
     
-    this._getMeshStates = () => {
-      const states = this.dices.map(({ body }, bodyIndex) => ({
-        position: new THREE.Vector3().copy(body.position),
-        quaternion: new THREE.Quaternion().copy(body.quaternion),
-        // ref: meshRefs[bodyIndex],
-      }));
-
-      // console.log(states);
+    this.getMeshStates = () => {
+      const states = [];
+      
+      if(this.bodies.length > 0) {
+        const states = this.bodies.map((body, bodyIndex) => ({
+          position: new THREE.Vector3().copy(body.position),
+          quaternion: new THREE.Quaternion().copy(body.quaternion),
+          // ref: meshRefs[bodyIndex],
+        }));
+  
+        console.log(states[0].position);
+      }
       return states;
     }
 
     this._onAnimate = () => {
-      // this.world.step(this.frame_rate);
-      // this._getMeshStates();
+      this.world.step(this.frame_rate);
+      this.getMeshStates();
       this.setState({
         cubeRotation: new THREE.Euler(
           this.state.cubeRotation.x + 0.01,
           this.state.cubeRotation.y + 0.01,
           0,
         ),
-        meshStates: this._getMeshStates(),
+        meshStates: this.getMeshStates(),
       });
 
       // console.log(this.state.meshStates[3].position.x);
@@ -522,11 +528,11 @@ export default class Roller extends Component {
     // this.refs.scene.add(die);
     this.bodies.push(body);
     // this.dices.push(die);
-    this.world.add(die.body);
+    this.world.add(body);
   }
 
   prepare_dices_for_roll(vectors) {
-    console.log(vectors)
+    console.log(vectors);
     this.clear();
     this.iteration = 0;
     vectors.forEach((vector) => {
@@ -540,14 +546,14 @@ export default class Roller extends Component {
     });
   }
 
-  get_dice_value(dice) {
+  get_dice_value(geometry, body) {
     const vector = new THREE.Vector3(0, 0, 1);
     let closest_face;
     let closest_angle = Math.PI * 2;
-    for (let i = 0, l = dice.geometry.faces.length; i < l; ++i) {
-      const face = dice.geometry.faces[i];
+    for (let i = 0, l = geometry.faces.length; i < l; ++i) {
+      const face = geometry.faces[i];
       if (face.materialIndex !== 0) {
-        const angle = face.normal.clone().applyQuaternion(dice.body.quaternion).angleTo(vector);
+        const angle = face.normal.clone().applyQuaternion(body.quaternion).angleTo(vector);
         if (angle < closest_angle) {
           closest_angle = angle;
           closest_face = face;
@@ -558,10 +564,10 @@ export default class Roller extends Component {
     return matindex;
   }
 
-  get_dice_values(dices) {
+  get_dice_values() {
     const values = [];
-    for (let i = 0, l = dices.length; i < l; ++i) {
-      values.push(this.get_dice_value(dices[i]));
+    for (let i = 0, l = this.geometries.length; i < l; ++i) {
+      values.push(this.get_dice_value(this.geometries[i], this.bodies[i]));
     }
     return values;
   }
@@ -598,7 +604,7 @@ export default class Roller extends Component {
       ++this.iteration;
       this.world.step(this.frame_rate);
     }
-    return this.get_dice_values(this.dices);
+    return this.get_dice_values();
   }
 
   checkDicePosition() {
@@ -625,12 +631,15 @@ export default class Roller extends Component {
     return rollOk;
   }
 
-  shift_dice_faces(dice, value, res) {
+  shift_dice_faces(geometry, value, res, index) {
+    // console.log('geometry:'+geometry);
+    // console.log('value:' + value);
+    // console.log('result:' + res);
 
     const r = [1, 6];
     if (!(value >= r[0] && value <= r[1])) return;
     const num = value - res;
-    const geom = dice.geometry.clone();
+    const geom = geometry.clone();
     for (let i = 0, l = geom.faces.length; i < l; ++i) {
       let matindex = geom.faces[i].materialIndex;
       if (matindex !== 0) {
@@ -640,7 +649,7 @@ export default class Roller extends Component {
         geom.faces[i].materialIndex = matindex + 1;
       }
     }
-    dice.geometry = geom;
+    this.geometries[index] = geom;
   }
 
   roll(vectors, callback) {
@@ -654,6 +663,7 @@ export default class Roller extends Component {
 
     if (roll !== undefined && roll.length) {
       const res = this.emulate_throw();
+      console.log('res');
       console.log(res);
       // if (!this.checkDicePosition()) {
       //   // console.log('getting new vectors');
@@ -665,8 +675,10 @@ export default class Roller extends Component {
       // console.log(res);
       this.prepare_dices_for_roll(vectors);
 
+      console.log(this.bodies);
+
       for (let i = 0; i < res.length; i++) {
-        this.shift_dice_faces(this.dices[i], roll[i], res[i]);
+        this.shift_dice_faces(this.geometries[i], roll[i], res[i], i);
       }
     }
 
@@ -731,14 +743,15 @@ export default class Roller extends Component {
       meshStates
     } = this.state;
 
-    const diceMeshes = meshStates.map(({position, quaternion}, i) => {
-        const die = this.dices[i];
-        die.key = i;
-        die.position = position;
-        die.quaternion = quaternion;
-        return die;
-      }
-    );
+    const diceMeshes = meshStates.map(({position, quaternion}, i) => 
+    (<Die
+      key={i}
+      dices={this.dices}
+
+      position={position}
+      quaternion={quaternion}
+      geometry={this.geometries[i]}
+    />));
 
     return (
       <div ref="container">
@@ -754,55 +767,6 @@ export default class Roller extends Component {
           shadowMapType={this.shadow_map_type}
         >
           <resources>
-{/* 
-          new THREE.MeshPhongMaterial({
-          map: new THREE.TextureLoader().load('./img/material.png'),
-          // map: new THREE.TextureLoader().load('./img/wood.jpg'),
-          // color: 0x000000,
-          specular: specularColor,
-          shininess: shineness,
-          shading,
-        }),
-        new THREE.MeshPhongMaterial({
-          color: 0x00ff00,
-        }),
-        new THREE.MeshPhongMaterial({
-          map: new THREE.TextureLoader().load('./img/1.png'),
-          specular: specularColor,
-          shininess: shineness,
-          shading,
-        }),
-        new THREE.MeshPhongMaterial({
-          map: new THREE.TextureLoader().load('./img/2.png'),
-          specular: specularColor,
-          shininess: shineness,
-          shading,
-        }),
-        new THREE.MeshPhongMaterial({
-          map: new THREE.TextureLoader().load('./img/3.png'),
-          specular: specularColor,
-          shininess: shineness,
-          shading,
-        }),
-        new THREE.MeshPhongMaterial({
-          map: new THREE.TextureLoader().load('./img/4.png'),
-          specular: specularColor,
-          shininess: shineness,
-          shading,
-        }),
-        new THREE.MeshPhongMaterial({
-          map: new THREE.TextureLoader().load('./img/5.png'),
-          specular: specularColor,
-          shininess: shineness,
-          shading,
-        }),
-        new THREE.MeshPhongMaterial({
-          map: new THREE.TextureLoader().load('./img/6.png'),
-          specular: specularColor,
-          shininess: shineness,
-          shading,
-        }), */}
-
             {/* textures */}
             <texture
               resourceId="materialTexture"
@@ -854,7 +818,15 @@ export default class Roller extends Component {
               specular={this.dieSpecular}
               shininess={this.dieShininess}
               shading={this.dieShading}
-            />
+            >
+               <textureResource resourceId="materialTexture" />
+               <textureResource resourceId="oneTexture" />
+               <textureResource resourceId="twoTexture" />
+               <textureResource resourceId="threeTexture" />
+               <textureResource resourceId="fourTexture" />
+               <textureResource resourceId="fiveTexture" />
+               <textureResource resourceId="sixTexture" />
+            </meshPhongMaterial>
           </resources>
           <scene
             ref='scene'
@@ -892,7 +864,7 @@ export default class Roller extends Component {
               <boxGeometry width={100} height={100} depth={50} />
               <meshBasicMaterial color={0x00ff00} wireframe />
             </mesh>
-            {/* {diceMeshes} */}
+            {diceMeshes}
             <mesh
               ref='desk'
               receiveShadow
