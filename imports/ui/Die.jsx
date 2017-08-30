@@ -23,6 +23,8 @@ class Die extends React.Component {
     } = this.props;
 
     dices.push(mesh);
+    console.log('dices from die: ');
+    console.log(dices.toString());
   }
 
   componentWillUnmount() {

@@ -382,14 +382,15 @@ export default class Roller extends Component {
           // ref: meshRefs[bodyIndex],
         }));
   
-        console.log(states[0].position);
+        // console.log(states[0].position);
       }
       return states;
     }
 
     this._onAnimate = () => {
       this.world.step(this.frame_rate);
-      this.getMeshStates();
+      ++this.iteration;
+      // console.log(this.iteration);
       this.setState({
         cubeRotation: new THREE.Euler(
           this.state.cubeRotation.x + 0.01,
@@ -398,8 +399,6 @@ export default class Roller extends Component {
         ),
         meshStates: this.getMeshStates(),
       });
-
-      // console.log(this.state.meshStates[3].position.x);
     };
 
 
@@ -494,10 +493,10 @@ export default class Roller extends Component {
 
   clear() {
     this.running = false;
-    while (this.dices.length !== 0) {
-      const dice = this.dices.pop();
-      this.refs.scene.remove(dice);
-      if (dice.body) this.world.remove(dice.body);
+    while (this.bodies.length !== 0) {
+      const body = this.bodies.pop();
+      this.geometries.pop();
+      this.world.remove(body);
     }
     // setTimeout(() => { box.renderer.render(box.scene, box.camera); }, 100);
   }
@@ -576,21 +575,21 @@ export default class Roller extends Component {
     let res = true;
     const e = 2;
     if (this.iteration < 10 / this.frame_rate) {
-      for (let i = 0; i < this.dices.length; ++i) {
-        const dice = this.dices[i];
-        if (dice.dice_stopped !== true) {
-          const a = dice.body.angularVelocity;
-          const v = dice.body.velocity;
+      for (let i = 0; i < this.bodies.length; ++i) {
+        const body = this.bodies[i];
+        if (body.stopped !== true) {
+          const a = body.angularVelocity;
+          const v = body.velocity;
           if (Math.abs(a.x) < e && Math.abs(a.y) < e && Math.abs(a.z) < e &&
             Math.abs(v.x) < e && Math.abs(v.y) < e && Math.abs(v.z) < e) {
-            if (dice.dice_stopped) {
-              if (this.iteration - dice.dice_stopped > 3) {
-                dice.dice_stopped = true;
+            if (body.stopped) {
+              if (this.iteration - body.stopped > 3) {
+                body.stopped = true;
               }
-            } else dice.dice_stopped = this.iteration;
+            } else body.stopped = this.iteration;
             res = false;
           } else {
-            dice.dice_stopped = undefined;
+            body.stopped = undefined;
             res = false;
           }
         }
@@ -767,6 +766,21 @@ export default class Roller extends Component {
           shadowMapType={this.shadow_map_type}
         >
           <resources>
+            <boxGeometry
+              resourceId="cubeGeo"
+
+              width={50}
+              height={50}
+              depth={50}
+
+              widthSegments={10}
+              heightSegments={10}
+            />
+            <meshPhongMaterial
+              resourceId="cubeMaterial"
+
+              color={0x888888}
+            />
             {/* textures */}
             <texture
               resourceId="materialTexture"
