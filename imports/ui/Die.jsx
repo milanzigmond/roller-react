@@ -4,28 +4,143 @@ import * as THREE from 'three';
 
 import PropTypes from 'prop-types';
 
-class Die extends React.Component {
+export default class Die extends React.Component {
   static propTypes = {
     position: PropTypes.instanceOf(THREE.Vector3).isRequired,
     quaternion: PropTypes.instanceOf(THREE.Quaternion).isRequired,
     dices: PropTypes.arrayOf(PropTypes.instanceOf(THREE.Mesh)).isRequired,
     geometry: PropTypes.instanceOf(THREE.Geometry).isRequired,
-    // bodyIndex: PropTypes.number.isRequired,
-    // onMouseDown: PropTypes.func.isRequired,
   };
+
+  constructor (props, context) {
+    super(props, context);
+
+    this.dieSpecular = 'brown';
+    this.dieShineness = 5;
+    this.dieShading = THREE.FlatShading;
+  }
 
   componentDidMount() {
     const {
       mesh,
+      group
     } = this.refs;
 
     const {
       dices,
+      geometry
     } = this.props;
 
     dices.push(mesh);
-    console.log('dices from die: ');
-    console.log(dices.toString());
+
+    // materials
+
+    // wood 
+
+    // materials = [
+    //   new THREE.MeshPhongMaterial({
+    //     map: new THREE.TextureLoader().load('./img/wood.jpg'),
+    //     specular: this.dieSpecular,
+    //     shininess: this.dieShineness,
+    //     shading: this.dieShading,
+    //   }),
+    //   new THREE.MeshPhongMaterial({
+    //     color: 0x00ff00,
+    //   }),
+    //   new THREE.MeshPhongMaterial({
+    //     map: new THREE.TextureLoader().load('./img/1.png'),
+    //     specular: this.dieSpecular,
+    //     shininess: this.dieShineness,
+    //     shading: this.dieShading,
+    //   }),
+    //   new THREE.MeshPhongMaterial({
+    //     map: new THREE.TextureLoader().load('./img/2.png'),
+    //     specular: this.dieSpecular,
+    //     shininess: this.dieShineness,
+    //     shading: this.dieShading,
+    //   }),
+    //   new THREE.MeshPhongMaterial({
+    //     map: new THREE.TextureLoader().load('./img/3.png'),
+    //     specular: this.dieSpecular,
+    //     shininess: this.dieShineness,
+    //     shading: this.dieShading,
+    //   }),
+    //   new THREE.MeshPhongMaterial({
+    //     map: new THREE.TextureLoader().load('./img/4.png'),
+    //     specular: this.dieSpecular,
+    //     shininess: this.dieShineness,
+    //     shading: this.dieShading,
+    //   }),
+    //   new THREE.MeshPhongMaterial({
+    //     map: new THREE.TextureLoader().load('./img/5.png'),
+    //     specular: this.dieSpecular,
+    //     shininess: this.dieShineness,
+    //     shading: this.dieShading,
+    //   }),
+    //   new THREE.MeshPhongMaterial({
+    //     map: new THREE.TextureLoader().load('./img/6.png'),
+    //     specular: this.dieSpecular,
+    //     shininess: this.dieShineness,
+    //     shading: this.dieShading,
+    //   }),
+    // ];
+
+    // plastic 
+
+    // wood 
+    
+    materials = [
+      new THREE.MeshPhongMaterial({
+        map: new THREE.TextureLoader().load('./img/plasticMaterial.png'),
+        specular: this.dieSpecular,
+        shininess: this.dieShineness,
+        shading: this.dieShading,
+      }),
+      new THREE.MeshPhongMaterial({
+        color: 0x00ff00,
+      }),
+      new THREE.MeshPhongMaterial({
+        map: new THREE.TextureLoader().load('./img/plastic1.png'),
+        specular: this.dieSpecular,
+        shininess: this.dieShineness,
+        shading: this.dieShading,
+      }),
+      new THREE.MeshPhongMaterial({
+        map: new THREE.TextureLoader().load('./img/plastic2.png'),
+        specular: this.dieSpecular,
+        shininess: this.dieShineness,
+        shading: this.dieShading,
+      }),
+      new THREE.MeshPhongMaterial({
+        map: new THREE.TextureLoader().load('./img/plastic3.png'),
+        specular: this.dieSpecular,
+        shininess: this.dieShineness,
+        shading: this.dieShading,
+      }),
+      new THREE.MeshPhongMaterial({
+        map: new THREE.TextureLoader().load('./img/plastic4.png'),
+        specular: this.dieSpecular,
+        shininess: this.dieShineness,
+        shading: this.dieShading,
+      }),
+      new THREE.MeshPhongMaterial({
+        map: new THREE.TextureLoader().load('./img/plastic5.png'),
+        specular: this.dieSpecular,
+        shininess: this.dieShineness,
+        shading: this.dieShading,
+      }),
+      new THREE.MeshPhongMaterial({
+        map: new THREE.TextureLoader().load('./img/plastic6.png'),
+        specular: this.dieSpecular,
+        shininess: this.dieShineness,
+        shading: this.dieShading,
+      }),
+    ];
+
+    let die = new THREE.Mesh( geometry,  materials );
+    die.castShadow = true;
+    die.receiveShadow = true;
+    group.add( die );
   }
 
   componentWillUnmount() {
@@ -46,30 +161,12 @@ class Die extends React.Component {
       quaternion,
     } = this.props;
 
-    const {
-      vertices,
-      faces
-    } = this.props.geometry
-
-    return (<mesh
-      position={position}
-      quaternion={quaternion}
-
-      ref="mesh"
-
-      castShadow
-      receiveShadow
-    >
-      {/* <geometry
-        vertices={vertices}
-        faces={faces}
-      /> */}
-      <geometryResourse resourceId="cubeGeo" />
-      <materialResource
-        resourceId="dieMaterial"
+    return (
+      <group 
+        ref='group' 
+        position={position} 
+        quaternion={quaternion}
       />
-    </mesh>);
+    );
   }
 }
-
-export default Die;

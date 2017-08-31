@@ -37,10 +37,8 @@ export default class Roller extends Component {
     this.use_true_random = true;
     this.frame_rate = 1 / 60;
     this.clear_color = '#666666';
-    this.label_color = '#aaaaaa';
-    this.dice_color = '#202020';
     this.spot_light_color = 'white';
-    this.ambient_light_color = '#d7ad59';
+    this.ambient_light_color = 'green';
     this.selector_back_colors = {
       color: 0x404040,
       shininess: 0,
@@ -48,11 +46,7 @@ export default class Roller extends Component {
     };
     this.dice_mass = 300;
     this.dice_inertia = 10;
-    this.dieSpecular = 'brown';
-    this.dieShineness = 5;
-    this.dieShading = THREE.FlatShading;
-
-
+  
 
     this.scale = 100;
     this.random_storage = [];
@@ -62,7 +56,7 @@ export default class Roller extends Component {
     this.shadow_map_type = THREE.PCFSoftShadowMap;
     this.wrapping = THREE.RepeatWrapping;
 
-    this.deskColor = 'purple';
+    this.deskColor = 'brown';
     this.deskSpecular = 'white';
     this.deskShininess = 2;
     this.repeat = new THREE.Vector2(40, 40);
@@ -121,63 +115,73 @@ export default class Roller extends Component {
       this.barrier_body_material = new CANNON.Material();
       
       // materials contact setup
-
+      
       this.world.addContactMaterial(
         new CANNON.ContactMaterial(
           this.desk_body_material, 
           this.dice_body_material, 
-          { 
-            friction: 0.01, 
-            restitution: 0.5
-          }
+          { friction: 0.01, restitution: 0.5}
         )
       );
       this.world.addContactMaterial(
         new CANNON.ContactMaterial(
           this.barrier_body_material, 
           this.dice_body_material, 
-          {
-            friction: 0.01,
-            restitution: 0.5
-          }
+          { friction: 0.01, restitution: 0.5}
         )
       );
       this.world.addContactMaterial(
         new CANNON.ContactMaterial(
           this.dice_body_material, 
           this.dice_body_material, 
-          {
-            friction: 0,
-            restitution:  0.5
-          }
+          { friction: 0, restitution: 0.5}
         )
       );
-
+      
       // create barriers
 
-      this.world.add(new CANNON.Body(0, new CANNON.Plane(), this.desk_body_material));
+      this.world.add(new CANNON.Body({
+        mass: 0,
+        shape: new CANNON.Plane(),
+        material: this.desk_body_material
+      }));
       
       let barrier;
-      barrier = new CANNON.Body(0, new CANNON.Plane(), this.barrier_body_material);
+      barrier = new CANNON.Body({
+        mass: 0, 
+        shape: new CANNON.Plane(),
+        material: this.barrier_body_material,
+        position: new THREE.Vector3(0, this.h * 0.93, 0),
+      });
       barrier.quaternion.setFromAxisAngle(new CANNON.Vec3(1, 0, 0), Math.PI / 2);
-      barrier.position.set(0, this.h * 0.93, 0);
       this.world.add(barrier);
 
-      barrier = new CANNON.Body(0, new CANNON.Plane(), this.barrier_body_material);
+      barrier = new CANNON.Body({
+        mass: 0,
+        shape: new CANNON.Plane(),
+        material: this.barrier_body_material,
+        position: new THREE.Vector3(0, -this.h * 0.93, 0),
+      });
       barrier.quaternion.setFromAxisAngle(new CANNON.Vec3(1, 0, 0), -Math.PI / 2);
-      barrier.position.set(0, -this.h * 0.93, 0);
       this.world.add(barrier);
 
-      barrier = new CANNON.Body(0, new CANNON.Plane(), this.barrier_body_material);
+      barrier = new CANNON.Body({
+        mass: 0,
+        shape: new CANNON.Plane(),
+        material: this.barrier_body_material,
+        position: new THREE.Vector3(this.w * 0.93, 0, 0),
+      });
       barrier.quaternion.setFromAxisAngle(new CANNON.Vec3(0, 1, 0), -Math.PI / 2);
-      barrier.position.set(this.w * 0.93, 0, 0);
       this.world.add(barrier);
 
-      barrier = new CANNON.Body(0, new CANNON.Plane(), this.barrier_body_material);
+      barrier = new CANNON.Body({
+        mass: 0,
+        shape: new CANNON.Plane(),
+        material: this.barrier_body_material,
+        position: new THREE.Vector3(-this.w * 0.93, 0, 0),
+      });
       barrier.quaternion.setFromAxisAngle(new CANNON.Vec3(0, 1, 0), Math.PI / 2);
-      barrier.position.set(-this.w * 0.93, 0, 0);
       this.world.add(barrier);
-
     };
 
     initCannon();
@@ -210,16 +214,16 @@ export default class Roller extends Component {
     }
 
     this.create_cannon_shape = (vertices, faces, radius) => {
-      const cv = new Array(vertices.length);
-      const cf = new Array(faces.length);
+      const shapePoints = new Array(vertices.length);
+      const shapeFaces = new Array(faces.length);
       for (let i = 0; i < vertices.length; ++i) {
         const v = vertices[i];
-        cv[i] = new CANNON.Vec3(v.x * radius, v.y * radius, v.z * radius);
+        shapePoints[i] = new CANNON.Vec3(v.x * radius, v.y * radius, v.z * radius);
       }
       for (let i = 0; i < faces.length; ++i) {
-        cf[i] = faces[i].slice(0, faces[i].length - 1);
+        shapeFaces[i] = faces[i].slice(0, faces[i].length - 1);
       }
-      return new CANNON.ConvexPolyhedron(cv, cf);
+      return new CANNON.ConvexPolyhedron(shapePoints, shapeFaces);
     }
 
     this.create_geom = (vertices, faces, radius, tab, af, chamfer) => {
@@ -372,82 +376,38 @@ export default class Roller extends Component {
       return new THREE.Mesh(this.d6_geometry, materials);
     }
     
-    this.getMeshStates = () => {
-      const states = [];
+    this.getDiceStates = () => {
+      let states = [];
       
       if(this.bodies.length > 0) {
-        const states = this.bodies.map((body, bodyIndex) => ({
-          position: new THREE.Vector3().copy(body.position),
-          quaternion: new THREE.Quaternion().copy(body.quaternion),
+        states = this.bodies.map(
+          (body, bodyIndex) => ({
+            position: new THREE.Vector3().copy(body.position),
+            quaternion: new THREE.Quaternion().copy(body.quaternion),
           // ref: meshRefs[bodyIndex],
-        }));
-  
-        // console.log(states[0].position);
+          })
+        );
       }
       return states;
     }
 
     this._onAnimate = () => {
-      this.world.step(this.frame_rate);
+      if(!this.running) return;
+
       ++this.iteration;
-      // console.log(this.iteration);
+      
+      this.world.step(this.frame_rate);
+      
       this.setState({
-        cubeRotation: new THREE.Euler(
-          this.state.cubeRotation.x + 0.01,
-          this.state.cubeRotation.y + 0.01,
-          0,
-        ),
-        meshStates: this.getMeshStates(),
+        meshStates: this.getDiceStates(),
       });
-    };
 
-
-
-
-    this.__animate = () => {
-      // const time = (new Date()).getTime();
-      // let time_diff = (time - this.last_time) / 1000;
-      
-      // if (time_diff > 3) time_diff = this.frame_rate;
-      
-      ++this.iteration;
-      
-      this.world.step(this.frame_rate);
-  
-      // this.scene.children.forEach((child) => {
-      //   if (child.body !== undefined) {
-      //     child.position.copy(child.body.position);
-      //     child.quaternion.copy(child.body.quaternion);
-      //   }
-      // });
-      
-      // this.last_time = this.last_time ? time : (new Date()).getTime();
       if (this.check_if_throw_finished()) {
         this.running = false;
-        // if (this.callback) this.callback.call(this, Roller.get_dice_values(this.dices));
       }
-      // const that = this;
-      // if (this.running === threadid) {
-      //   (function (t, tid, uat) {
-      //     if (!uat && time_diff < that.frame_rate) {
-      //       setTimeout(() => {
-      //         requestAnimationFrame(() => {
-      //           t.__animate(tid);
-      //           that.stats.update();
-      //           // update stats
-      //         });
-      //       }, (that.frame_rate - time_diff) * 1000);
-      //     } else {
-      //       requestAnimationFrame(() => {
-      //         t.__animate(tid);
-      //         // update stats
-      //         that.stats.update();
-      //       });
-      //     }
-      //   }(this, threadid, this.use_adapvite_timestep));
-      // }
     };
   }
+
 
   rnd() {
     return Math.random();
@@ -501,9 +461,7 @@ export default class Roller extends Component {
     // setTimeout(() => { box.renderer.render(box.scene, box.camera); }, 100);
   }
 
-  create_dice(type, pos, velocity, angle, axis) {
-    console.log('type');
-    console.log(type);
+  create_dice(pos, velocity, angle, axis) {
     // const die = this.create_mesh();
     // die.castShadow = true;
     // die.receiveShadow = true;
@@ -522,7 +480,6 @@ export default class Roller extends Component {
     body.quaternion.setFromAxisAngle(
       new CANNON.Vec3(axis.x, axis.y, axis.z), axis.a * Math.PI * 2,
     );
-    console.log(body);
     // this.refs.scene.add(die);
     this.bodies.push(body);
     // this.dices.push(die);
@@ -530,14 +487,10 @@ export default class Roller extends Component {
   }
 
   prepare_dices_for_roll(vectors) {
-    console.log(vectors);
     this.clear();
     this.iteration = 0;
     vectors.forEach((vector) => {
-      console.log('vector');
-      console.log(vector);
       this.create_dice(
-        vector.set, 
         vector.pos, 
         vector.velocity,
         vector.angle, 
@@ -600,11 +553,7 @@ export default class Roller extends Component {
   }
 
   emulate_throw() {
-    // while (!this.check_if_throw_finished()) {
-    console.log(this.world);
-    console.log(this.frame_rate);
-    while (this.iteration < 300) {
-      console.log(this.bodies[0].position.z);
+    while (!this.check_if_throw_finished()) {
       ++this.iteration;
       this.world.step(this.frame_rate);
     }
@@ -615,31 +564,25 @@ export default class Roller extends Component {
     // get average y
     let rollOk = true;
     const values = [];
-    this.dices.forEach((dice) => {
-      values.push(dice.body.position.z);
+    this.bodies.forEach((body) => {
+      values.push(body.position.z);
     });
     const sum = values.reduce((previous, current) => {
       const newCurrent = current + previous;
       return newCurrent;
     });
     const avg = sum / values.length;
-    // console.log('checkDicePosition');
     // check if any dice is above the avg
-    this.dices.forEach((dice) => {
-      // console.log(`dice.body.position.z:${dice.body.position.z}`);
-      if (dice.body.position.z > (avg + 1)) {
+    this.bodies.forEach((body) => {
+      if (body.position.z > (avg + 1)) {
         rollOk = false;
-        // console.error('this dice has\'t rolled properly');
+        console.error('this dice has\'t rolled properly');
       }
     });
     return rollOk;
   }
 
   shift_dice_faces(geometry, value, res, index) {
-    // console.log('geometry:'+geometry);
-    // console.log('value:' + value);
-    // console.log('result:' + res);
-
     const r = [1, 6];
     if (!(value >= r[0] && value <= r[1])) return;
     const num = value - res;
@@ -657,30 +600,24 @@ export default class Roller extends Component {
   }
 
   roll(vectors, callback) {
-    // console.log('FUNCTION CALL : roll');
-    // console.log(vectors);
 
     this.prepare_dices_for_roll(vectors);
+    
     const {
       roll
     } = this.props;
-
+    
     if (roll !== undefined && roll.length) {
       const res = this.emulate_throw();
-      console.log('res');
-      console.log(res);
-      return;
-      // if (!this.checkDicePosition()) {
-      //   // console.log('getting new vectors');
-      //   const newVectors = this.generate_vectors();
-      //   this.roll(newVectors, roll, callback);
-      //   return;
-      // }
 
-      // console.log(res);
+      // make sure all dices fell properly
+      if (!this.checkDicePosition()) {
+        const newVectors = this.generate_vectors();
+        this.roll(newVectors, callback);
+        return;
+      }
+
       this.prepare_dices_for_roll(vectors);
-
-      console.log(this.bodies);
 
       for (let i = 0; i < res.length; i++) {
         this.shift_dice_faces(this.geometries[i], roll[i], res[i], i);
@@ -690,7 +627,6 @@ export default class Roller extends Component {
     this.callback = callback;
     this.running = (new Date()).getTime();
     this.last_time = 0;
-    // this.__animate(this.running);
   }
 
   throw_dices(vector, boost, dist) {
@@ -713,8 +649,8 @@ export default class Roller extends Component {
 
     roll();
 
-    // const snd = new Audio('./sound/die.wav');
-    // snd.play();
+    const snd = new Audio('./sound/die.wav');
+    snd.play();
   }
 
   start_throw() {
@@ -759,7 +695,9 @@ export default class Roller extends Component {
     />));
 
     return (
+      
       <div ref="container">
+        
         <React3 
           antialias
           mainCamera="camera" 
@@ -771,58 +709,44 @@ export default class Roller extends Component {
           shadowMapEnabled
           shadowMapType={this.shadow_map_type}
         >
+          
           <resources>
-            <boxGeometry
-              resourceId="cubeGeo"
-
-              width={50}
-              height={50}
-              depth={50}
-
-              widthSegments={10}
-              heightSegments={10}
-            />
-            <meshPhongMaterial
-              resourceId="cubeMaterial"
-
-              color={0x888888}
-            />
-            {/* textures */}
-            <texture
+            <texture 
               resourceId="materialTexture"
-              url="img/material.png"
+              url="img/material.png" 
             />
-            <texture
-              resourceId="oneTexture"
-              url="img/1.png"
+            <texture 
+              resourceId="1Texture"
+              url="img/1.png" 
             />
-            <texture
-              resourceId="twoTexture"
-              url="img/2.png"
+            <texture 
+              resourceId="2Texture"
+              url="img/2.png" 
             />
-            <texture
-              resourceId="threeTexture"
-              url="img/3.png"
+            <texture 
+              resourceId="3Texture"
+              url="img/3.png" 
             />
-            <texture
-              resourceId="fourTexture"
-              url="img/4.png"
+            <texture 
+              resourceId="4Texture"
+              url="img/4.png" 
             />
-            <texture
-              resourceId="fiveTexture"
-              url="img/5.png"
+            <texture 
+              resourceId="5Texture"
+              url="img/5.png" 
             />
-            <texture
-              resourceId="sixTexture"
-              url="img/6.png"
+            <texture 
+              resourceId="6Texture"
+              url="img/6.png" 
             />
             <texture
               resourceId="deskTexture"
-              url="img/pattern.png"
+              url="img/patternHard.png"
               wrapS={this.wrapping}
               wrapT={this.wrapping}
               repeat={this.repeat}
             />
+            
             <meshPhongMaterial
               resourceId="deskMaterial"
               color={this.deskColor}
@@ -833,21 +757,8 @@ export default class Roller extends Component {
                 resourceId="deskTexture"
               />
             </meshPhongMaterial>
-            <meshPhongMaterial
-              resourceId="dieMaterial"
-              specular={this.dieSpecular}
-              shininess={this.dieShininess}
-              shading={this.dieShading}
-            >
-               <textureResource resourceId="materialTexture" />
-               <textureResource resourceId="oneTexture" />
-               <textureResource resourceId="twoTexture" />
-               <textureResource resourceId="threeTexture" />
-               <textureResource resourceId="fourTexture" />
-               <textureResource resourceId="fiveTexture" />
-               <textureResource resourceId="sixTexture" />
-            </meshPhongMaterial>
           </resources>
+
           <scene
             ref='scene'
           >
@@ -859,6 +770,7 @@ export default class Roller extends Component {
               far={this.wh*1.3}
               position={this.cameraPosition}
             />
+            
             <spotLight
               color={this.spot_light_color}
               intensity={1.5}
@@ -877,18 +789,15 @@ export default class Roller extends Component {
               position={this.lightPosition}
               lookAt={this.lightTarget}
             />
+            
             <ambientLight
               color={this.ambient_light_color}
+              intensity={1}
             />
-            <mesh rotation={this.state.cubeRotation}>
-              <boxGeometry width={100} height={100} depth={50} />
-              <meshBasicMaterial color={0x00ff00} wireframe />
-            </mesh>
+            
             {diceMeshes}
-            <mesh
-              ref='desk'
-              receiveShadow
-            >
+            
+            <mesh ref='desk' receiveShadow>
               <planeGeometry
                 width={this.w*2}
                 height={this.h*2}

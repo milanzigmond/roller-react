@@ -1,41 +1,30 @@
 import React, { Component } from 'react';
-
 import Roller from './Roller';
-import Geometries from './Geometries';
 
-// App component - represents the whole app
+
 export default class App extends Component {
-  generateNumber1To6() {
-    return numberOfDice = Math.floor((Math.random() * 6) + 1);
+  static rnd1to6() {
+    return Math.floor((Math.random() * 6) + 1);
   }
 
-  generateThrow() {
-    numberOfDice = generateNumber1To6();
-    const set = [];
+  static randomRoll() {
+    // get random number of dice 1 - 6
+    const numberOfDice = App.rnd1to6();
+    const roll = [];
     for (let i = numberOfDice - 1; i >= 0; i--) {
-      set.push(generateNumber1To6());
+      roll.push(App.rnd1to6());
     }
-    console.log(set);
-    return set;
+    console.log(roll);
+    return roll;
   }
-  //  renderTasks() {
-  //    return this.getTasks().map((task) => (
-  //      <Task key={task._id} task={task} />
-  //    ));
-  //  }
 
   render() {
     return (
       <Roller
         width={window.innerWidth}
         height={window.innerHeight}
-        roll={[1, 2, 3, 4, 5, 6]}
+        roll={App.randomRoll()}
       />
-
-      // <Geometries
-      //   width={window.innerWidth}
-      //   height={window.innerHeight}
-      // />
     );
   }
 }
