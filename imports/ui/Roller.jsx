@@ -105,7 +105,7 @@ export default class Roller extends Component {
     this.world = new CANNON.World();
       
     const initCannon = () => {
-      
+  
       // setup world
 
       this.world.gravity.set(0, 0, -9.8 * 800);
@@ -502,28 +502,27 @@ export default class Roller extends Component {
   }
 
   create_dice(type, pos, velocity, angle, axis) {
+    console.log('type');
+    console.log(type);
     // const die = this.create_mesh();
     // die.castShadow = true;
     // die.receiveShadow = true;
-    // die.dice_type = type;
 
     const geo = this.create_geometry(this.scale);
     this.geometries.push(geo);
 
-    const body =  new CANNON.Body(
-      this.dice_mass,
-      geo.cannon_shape, 
-      this.dice_body_material
-    );
-    body.position.set(pos.x, pos.y, pos.z);
+    const body =  new CANNON.Body({
+      mass: this.dice_mass,
+      shape:  geo.cannon_shape,
+      material: this.dice_body_material,
+      position: new THREE.Vector3(pos.x, pos.y, pos.z),
+      angularVelocity: new THREE.Vector3(angle.x, angle.y, angle.z),
+      velocity: new THREE.Vector3(velocity.x, velocity.y, velocity.z),
+    });
     body.quaternion.setFromAxisAngle(
       new CANNON.Vec3(axis.x, axis.y, axis.z), axis.a * Math.PI * 2,
     );
-    body.angularVelocity.set(angle.x, angle.y, angle.z);
-    body.velocity.set(velocity.x, velocity.y, velocity.z);
-    body.linearDamping = 0.01;
-    body.angularDamping = 0.01;
-    // console.log(dice);
+    console.log(body);
     // this.refs.scene.add(die);
     this.bodies.push(body);
     // this.dices.push(die);
@@ -535,6 +534,8 @@ export default class Roller extends Component {
     this.clear();
     this.iteration = 0;
     vectors.forEach((vector) => {
+      console.log('vector');
+      console.log(vector);
       this.create_dice(
         vector.set, 
         vector.pos, 
@@ -599,7 +600,11 @@ export default class Roller extends Component {
   }
 
   emulate_throw() {
-    while (!this.check_if_throw_finished()) {
+    // while (!this.check_if_throw_finished()) {
+    console.log(this.world);
+    console.log(this.frame_rate);
+    while (this.iteration < 300) {
+      console.log(this.bodies[0].position.z);
       ++this.iteration;
       this.world.step(this.frame_rate);
     }
@@ -664,6 +669,7 @@ export default class Roller extends Component {
       const res = this.emulate_throw();
       console.log('res');
       console.log(res);
+      return;
       // if (!this.checkDicePosition()) {
       //   // console.log('getting new vectors');
       //   const newVectors = this.generate_vectors();

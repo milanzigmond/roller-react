@@ -1,3 +1,4 @@
+
 import React from 'react';
 import * as THREE from 'three';
 
@@ -59,10 +60,11 @@ class Die extends React.Component {
       castShadow
       receiveShadow
     >
-      <geometry
+      {/* <geometry
         vertices={vertices}
         faces={faces}
-      />
+      /> */}
+      <geometryResourse resourceId="cubeGeo" />
       <materialResource
         resourceId="dieMaterial"
       />
