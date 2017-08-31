@@ -97,7 +97,7 @@ export default class Die extends React.Component {
         shading: this.dieShading,
       }),
       new THREE.MeshPhongMaterial({
-        color: 0x00ff00,
+        color: 0xff0000,
       }),
       new THREE.MeshPhongMaterial({
         map: new THREE.TextureLoader().load('./img/plastic1.png'),

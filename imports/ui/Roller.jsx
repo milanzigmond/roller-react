@@ -45,7 +45,7 @@ export default class Roller extends Component {
       emissive: 0x858787,
     };
     this.dice_mass = 300;
-    this.dice_inertia = 10;
+    this.dice_inertia = 30;
   
 
     this.scale = 100;
@@ -53,11 +53,11 @@ export default class Roller extends Component {
     this.throwData = {};
     this.throwVector = {};
     this.boost = 0;
-    this.shadow_map_type = THREE.PCFSoftShadowMap;
+    this.shadow_map_type = THREE.PCFShadowMap;
     this.wrapping = THREE.RepeatWrapping;
 
-    this.deskColor = 'brown';
-    this.deskSpecular = 'white';
+    this.deskColor = 'orange';
+    this.deskSpecular = 'blue';
     this.deskShininess = 2;
     this.repeat = new THREE.Vector2(40, 40);
     this.throwVector = {};
