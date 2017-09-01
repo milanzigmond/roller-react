@@ -8,7 +8,6 @@ export default class Die extends React.Component {
   static propTypes = {
     position: PropTypes.instanceOf(THREE.Vector3).isRequired,
     quaternion: PropTypes.instanceOf(THREE.Quaternion).isRequired,
-    dices: PropTypes.arrayOf(PropTypes.instanceOf(THREE.Mesh)).isRequired,
     geometry: PropTypes.instanceOf(THREE.Geometry).isRequired,
   };
 
@@ -22,16 +21,12 @@ export default class Die extends React.Component {
 
   componentDidMount() {
     const {
-      mesh,
       group
     } = this.refs;
 
     const {
-      dices,
       geometry
     } = this.props;
-
-    dices.push(mesh);
 
     // materials
 
@@ -141,18 +136,6 @@ export default class Die extends React.Component {
     die.castShadow = true;
     die.receiveShadow = true;
     group.add( die );
-  }
-
-  componentWillUnmount() {
-    const {
-      mesh,
-    } = this.refs;
-
-    const {
-      dices,
-    } = this.props;
-
-    dices.splice(dices.indexOf(mesh), 1);
   }
 
   render() {
