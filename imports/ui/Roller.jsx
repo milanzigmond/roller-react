@@ -1,9 +1,11 @@
-import React, { Component } from 'react';
-import PropTypes from 'prop-types';
+// "use strict";
 
-import React3 from 'react-three-renderer';
-import * as THREE from 'three';
-import CANNON from 'cannon';
+import React, { Component } from 'react'
+import PropTypes from 'prop-types'
+import React3 from 'react-three-renderer'
+
+import * as THREE from 'three'
+import CANNON from 'cannon'
 
 import Die from './Die'
 
@@ -65,24 +67,25 @@ export default class Roller extends Component {
   }
 
   _onAnimate = () => {
-    // update stats
-    // this.stats.update();
+    this.stats.begin();
 
     // only animate when dice are moving
-    if(!this.rolling) return;
-
-    // update at the frame rate
-    ++this.iteration;
-    this.world.step(this.frame_rate);
-    // get dice states form the changing world
-    this.setState({
-      meshStates: this.getDiceStates(),
-    });
-
-    // check if the throw is done
-    if (this.check_if_throw_finished()) {
-      if (this.callback) this.callback.call(this);
+    if(this.rolling) {
+      // update at the frame rate
+      ++this.iteration;
+      this.world.step(this.frame_rate);
+      // get dice states form the changing world
+      this.setState({
+        meshStates: this.getDiceStates(),
+      });
+  
+      // check if the throw is done
+      if (this.check_if_throw_finished()) {
+        if (this.callback) this.callback.call(this);
+      } 
     }
+
+    this.stats.end();
   };
 
   initCannon = () => {
@@ -491,90 +494,88 @@ export default class Roller extends Component {
     this.bodies.forEach((body) => {
       if (body.position.z > (avg + 1)) {
         rollOk = false;
-        console.error('this dice has\'t rolled properly');
+        console.error('this die has\'t rolled properly');
       }
     });
     return rollOk;
   }
-
+  
   shift_dice_faces(geometry, value, res, index) {
-
-
+    
     const r = [1, 6];
     const matIndexes = [2,3,4,5,6,7];
     if (!(value >= r[0] && value <= r[1])) return;
     const num = value - res;
     const geom = geometry.clone();
-
+    
     // top, bottom, left, right, front, back
     presentValues = [];
     switch (res) {
       case 1: 
-        presentValues = [1, 6, 2, 5, 3, 4]
-        break;
+      presentValues = [1, 6, 2, 5, 3, 4]
+      break;
       case 2: 
-        presentValues = [2, 5, 6, 1, 3, 4]
-        break;
+      presentValues = [2, 5, 6, 1, 3, 4]
+      break;
       case 3: 
-        presentValues = [3, 4, 2, 5, 1, 6]
-        break;
+      presentValues = [3, 4, 2, 5, 1, 6]
+      break;
       case 4: 
-        presentValues = [4, 3, 2, 5, 1, 6]
-        break;
+      presentValues = [4, 3, 2, 5, 1, 6]
+      break;
       case 5: 
-        presentValues = [5, 2, 6, 1, 4, 3]
-        break;
+      presentValues = [5, 2, 6, 1, 4, 3]
+      break;
       case 6: 
-        presentValues = [6, 1, 5, 2, 4, 3]
-        break;
+      presentValues = [6, 1, 5, 2, 4, 3]
+      break;
     }
-
+    
     newValues = [];
     switch (value) {
       case 1: 
-        newValues = [1, 6, 2, 5, 3, 4]
-        break;
+      newValues = [1, 6, 2, 5, 3, 4]
+      break;
       case 2: 
-        newValues = [2, 5, 6, 1, 3, 4]
-        break;
+      newValues = [2, 5, 6, 1, 3, 4]
+      break;
       case 3: 
-        newValues = [3, 4, 2, 5, 1, 6]
-        break;
+      newValues = [3, 4, 2, 5, 1, 6]
+      break;
       case 4: 
-        newValues = [4, 3, 2, 5, 1, 6]
-        break;
+      newValues = [4, 3, 2, 5, 1, 6]
+      break;
       case 5: 
-        newValues = [5, 2, 6, 1, 4, 3]
-        break;
+      newValues = [5, 2, 6, 1, 4, 3]
+      break;
       case 6: 
-        newValues = [6, 1, 5, 2, 4, 3]
-        break;
+      newValues = [6, 1, 5, 2, 4, 3]
+      break;
     }
-
     //  const faceToMaterial = (face) => {
-    //     return (face + 1);
-    //   }
-
-    for (let i = 0, l = geom.faces.length; i < l; ++i) {
-      let matindex = geom.faces[i].materialIndex;
-      // if face has a material and it needs to change
-      if (matindex !== 0 && num !==0) {
-        if (matIndexes.indexOf(matindex) != (-1)) {
-          const faceIndex = presentValues.indexOf(matindex-1)
-          geom.faces[i].materialIndex = newValues[faceIndex]+1;
+      //     return (face + 1);
+      //   }
+      
+      for (let i = 0, l = geom.faces.length; i < l; ++i) {
+        let matindex = geom.faces[i].materialIndex;
+        // if face has a material and it needs to change
+        if (matindex !== 0 && num !==0) {
+          if (matIndexes.indexOf(matindex) != (-1)) {
+            const faceIndex = presentValues.indexOf(matindex-1)
+            geom.faces[i].materialIndex = newValues[faceIndex]+1;
+          }
         }
       }
+      this.geometries[index] = geom;
     }
-    this.geometries[index] = geom;
-  }
-
-  roll(vectors, callback) {
-    this.prepare_dices_for_roll(vectors);
+    
+    roll(vectors, callback) {
+      this.prepare_dices_for_roll(vectors);
     
     if (this.diceToRoll !== undefined && this.diceToRoll.length) {
       const res = this.emulate_throw();
 
-      // make sure all dices fell properly
+      // make sure all dices fell on the full side
       if (!this.checkDicePosition()) {
         const newVectors = this.generate_vectors();
         this.roll(newVectors, callback);
@@ -687,21 +688,30 @@ export default class Roller extends Component {
     this.controls = new OrbitControls( camera, renderer.domElement );
   }
 
+  addStats() {
+    this.stats = new Stats();
+    this.stats.setMode(0); // 0: fps, 1: ms 
+     
+    // align top-left 
+    this.stats.domElement.style.position = 'absolute';
+    this.stats.domElement.style.left = '0px';
+    this.stats.domElement.style.top = '0px';
+
+    document.body.appendChild( this.stats.domElement );
+  }
+
   componentDidMount() {
     const {
       scene
     } = this.refs;
-    
-    this.diceToRoll = [6,6,6,6,6,6];
-    
-    this.initCannon();
-    window.setTimeout(() => {
-      this.diceToRoll = this.randomRoll();
-      this.start_throw();
-    } , 10000);
-    this.start_throw();
-    
+
     // this.addOrbitControls();
+    this.addStats();
+      
+    this.initCannon();
+  
+    this.diceToRoll = [6,6,6,6,6,6];
+    this.start_throw();
   }
 
   componentWillUnmount() {
@@ -735,6 +745,8 @@ export default class Roller extends Component {
         ref="container" 
         onMouseDown={this.onMouseDown}
         onMouseUp={this.onMouseUp}
+        onTouchStart={this.onMouseDown}
+        onTouchEnd={this.onMouseUp}
       >  
         <React3 
           ref="renderer"

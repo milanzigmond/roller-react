@@ -1,4 +1,3 @@
-
 import React from 'react';
 import * as THREE from 'three';
 
@@ -31,8 +30,6 @@ export default class Die extends React.Component {
       new THREE.MeshPhongMaterial({
         color: 0xff0000,
       }),
-
-      // green marble
       // left
       new THREE.MeshPhongMaterial({
         map: new THREE.TextureLoader().load('./img/plastic1.png'),
