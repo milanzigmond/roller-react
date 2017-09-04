@@ -35,13 +35,13 @@ export default class Roller extends Component {
     this.frame_rate = 1 / 60;
     this.clear_color = 'black';
     this.spot_light_color = 'white';
-    this.ambient_light_color = 'white';
+    this.ambient_light_color = '#0034AF';
     this.dice_mass = 300;
     this.dice_inertia = 10;
     this.scale = 100;
     this.boost = 0;
-    this.deskColor = 'white';
-    this.deskSpecular = 'blue';
+    this.deskColor = 'green';
+    this.deskSpecular = 'yellow';
     this.deskShininess = 2;
     this.repeat = new THREE.Vector2(10, 10);
     this.throwVector = {};
@@ -825,7 +825,7 @@ export default class Roller extends Component {
             
             <spotLight
               color={this.spot_light_color}
-              intensity={1.2}
+              intensity={1}
               distance={this.mw * 4}
 
               castShadow
