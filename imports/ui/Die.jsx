@@ -135,6 +135,7 @@ export default class Die extends React.Component {
     this.die = new THREE.Mesh( geometry,  this.plasticMaterials );
     this.die.castShadow = true;
     this.die.receiveShadow = true;
+    this.die.name = 'die';
     group.add(this.die);
   }
 
@@ -147,6 +148,7 @@ export default class Die extends React.Component {
   }
 
   componentDidMount() {
+    console.log('--------------die did mount');
     this.createDie();
   }
 

@@ -1,5 +1,3 @@
-// "use strict";
-
 import React, { Component } from 'react'
 import PropTypes from 'prop-types'
 import React3 from 'react-three-renderer'
@@ -36,14 +34,14 @@ export default class Roller extends Component {
     this.geometries = [];
     this.frame_rate = 1 / 60;
     this.clear_color = 'black';
-    this.spot_light_color = '#cccccc';
-    this.ambient_light_color = '#F45733';
+    this.spot_light_color = 'white';
+    this.ambient_light_color = 'white';
     this.dice_mass = 300;
     this.dice_inertia = 10;
     this.scale = 100;
     this.boost = 0;
     this.deskColor = 'white';
-    this.deskSpecular = 'yellow';
+    this.deskSpecular = 'blue';
     this.deskShininess = 2;
     this.repeat = new THREE.Vector2(10, 10);
     this.throwVector = {};
@@ -64,6 +62,8 @@ export default class Roller extends Component {
       shininess: 0,
       emissive: 0x858787,
     };
+    this.raycaster = new THREE.Raycaster();
+    this.mouse = new THREE.Vector2();
   }
 
   _onAnimate = () => {
@@ -331,7 +331,6 @@ export default class Roller extends Component {
     return states;
   }
 
-
   rnd() {
     return Math.random();
   }
@@ -499,6 +498,31 @@ export default class Roller extends Component {
     });
     return rollOk;
   }
+
+  get_face_values = (filter) => {
+    let values = [];
+    switch (filter) {
+      case 1: 
+      values = [1, 6, 2, 5, 3, 4]
+      break;
+      case 2: 
+      values = [2, 5, 6, 1, 3, 4]
+      break;
+      case 3: 
+      values = [3, 4, 2, 5, 1, 6]
+      break;
+      case 4: 
+      values = [4, 3, 2, 5, 1, 6]
+      break;
+      case 5: 
+      values = [5, 2, 6, 1, 4, 3]
+      break;
+      case 6: 
+      values = [6, 1, 5, 2, 4, 3]
+      break;
+    }
+    return values;
+  }
   
   shift_dice_faces(geometry, value, res, index) {
     
@@ -509,68 +533,24 @@ export default class Roller extends Component {
     const geom = geometry.clone();
     
     // top, bottom, left, right, front, back
-    presentValues = [];
-    switch (res) {
-      case 1: 
-      presentValues = [1, 6, 2, 5, 3, 4]
-      break;
-      case 2: 
-      presentValues = [2, 5, 6, 1, 3, 4]
-      break;
-      case 3: 
-      presentValues = [3, 4, 2, 5, 1, 6]
-      break;
-      case 4: 
-      presentValues = [4, 3, 2, 5, 1, 6]
-      break;
-      case 5: 
-      presentValues = [5, 2, 6, 1, 4, 3]
-      break;
-      case 6: 
-      presentValues = [6, 1, 5, 2, 4, 3]
-      break;
-    }
-    
-    newValues = [];
-    switch (value) {
-      case 1: 
-      newValues = [1, 6, 2, 5, 3, 4]
-      break;
-      case 2: 
-      newValues = [2, 5, 6, 1, 3, 4]
-      break;
-      case 3: 
-      newValues = [3, 4, 2, 5, 1, 6]
-      break;
-      case 4: 
-      newValues = [4, 3, 2, 5, 1, 6]
-      break;
-      case 5: 
-      newValues = [5, 2, 6, 1, 4, 3]
-      break;
-      case 6: 
-      newValues = [6, 1, 5, 2, 4, 3]
-      break;
-    }
-    //  const faceToMaterial = (face) => {
-      //     return (face + 1);
-      //   }
-      
-      for (let i = 0, l = geom.faces.length; i < l; ++i) {
-        let matindex = geom.faces[i].materialIndex;
-        // if face has a material and it needs to change
-        if (matindex !== 0 && num !==0) {
-          if (matIndexes.indexOf(matindex) != (-1)) {
-            const faceIndex = presentValues.indexOf(matindex-1)
-            geom.faces[i].materialIndex = newValues[faceIndex]+1;
-          }
+    const presentValues = this.get_face_values(res);
+    const newValues = this.get_face_values(value);
+   
+    for (let i = 0, l = geom.faces.length; i < l; ++i) {
+      let matindex = geom.faces[i].materialIndex;
+      // if face has a material and it needs to change
+      if (matindex !== 0 && num !==0) {
+        if (matIndexes.indexOf(matindex) != (-1)) {
+          const faceIndex = presentValues.indexOf(matindex-1)
+          geom.faces[i].materialIndex = newValues[faceIndex]+1;
         }
       }
-      this.geometries[index] = geom;
     }
+    this.geometries[index] = geom;
+  }
     
-    roll(vectors, callback) {
-      this.prepare_dices_for_roll(vectors);
+  roll(vectors, callback) {
+    this.prepare_dices_for_roll(vectors);
     
     if (this.diceToRoll !== undefined && this.diceToRoll.length) {
       const res = this.emulate_throw();
@@ -612,7 +592,7 @@ export default class Roller extends Component {
       }
     );
 
-    const snd = new Audio('./sound/die.wav');
+    const snd = new Audio('/sound/die.wav');
     snd.play();
   }   
 
@@ -630,25 +610,24 @@ export default class Roller extends Component {
     }
   }
 
-  get_mouse_coords(ev) {
-    const touches = ev.changedTouches;
+  get_mouse_coords(event) {
+    const touches = event.changedTouches;
     if (touches) return { x: touches[0].clientX, y: touches[0].clientY };
-    return { x: ev.clientX, y: ev.clientY };
+    return { x: event.clientX, y: event.clientY };
   }
 
-  onMouseDown = (ev) => {
-    ev.preventDefault();
+  onMouseDown = (event) => {
+    event.preventDefault();
     this.mouse_time = (new Date()).getTime();
-    this.mouse_start = this.get_mouse_coords(ev);
+    this.mouse_start = this.get_mouse_coords(event);
   };
 
-  onMouseUp = (ev) => {
-
+  onMouseUp = (event) => {
     if (this.rolling) return;
     if (this.mouse_start === undefined) return;
-    ev.stopPropagation();
+    event.stopPropagation();
     
-    const m = this.get_mouse_coords(ev);
+    const m = this.get_mouse_coords(event);
     
     const vector = { x: m.x - this.mouse_start.x, y: -(m.y - this.mouse_start.y) };
     this.mouse_start = undefined;
@@ -666,6 +645,27 @@ export default class Roller extends Component {
 
     this.throw_dices(vector, boost, dist);
   };
+
+  onMouseMove = (event) => {
+    const {
+      camera,
+      scene
+    } = this.refs;
+
+    this.mouse.x = ( event.clientX / window.innerWidth ) * 2 - 1;
+    this.mouse.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
+
+    this.raycaster.setFromCamera( this.mouse, camera );
+    
+    // calculate objects intersecting the picking ray
+    const intersects = this.raycaster.intersectObjects( scene.children );
+    // console.log('intersects:');
+  
+    // for ( var i = 0; i < intersects.length; i++ ) {
+    //   console.log(intersects[i].object.name);
+    //   // intersects[i].object.material.color.set( 0xff0000 );
+    // }
+  }
 
   start_throw() {
     if (this.rolling) return;
@@ -745,6 +745,7 @@ export default class Roller extends Component {
         ref="container" 
         onMouseDown={this.onMouseDown}
         onMouseUp={this.onMouseUp}
+        onMouseMove={this.onMouseMove}
         onTouchStart={this.onMouseDown}
         onTouchEnd={this.onMouseUp}
       >  
@@ -843,12 +844,16 @@ export default class Roller extends Component {
             
             <ambientLight
               color={this.ambient_light_color}
-              intensity={1.4}
+              intensity={1.2}
             />
             
             {diceMeshes}
             
-            <mesh ref='desk' receiveShadow>
+            <mesh 
+              name='desk'
+              ref='desk' 
+              receiveShadow
+            >
               <planeGeometry
                 width={this.w*2}
                 height={this.h*2}
