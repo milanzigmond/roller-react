@@ -11,7 +11,8 @@
     "react": "^15.6.1",
     "react-dom": "^15.6.1",
     "react-three-renderer": "^3.2.1",
-    "three": "^0.86.0"
+    "three": "^0.86.0",
+    "three-orbitcontrols": "^1.2.1"
   },
   "devDependencies": {
     "eslint-config-airbnb": "^15.1.0",
