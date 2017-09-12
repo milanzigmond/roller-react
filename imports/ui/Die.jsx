@@ -9,6 +9,7 @@ export default class Die extends React.Component {
     position: PropTypes.instanceOf(THREE.Vector3).isRequired,
     quaternion: PropTypes.instanceOf(THREE.Quaternion).isRequired,
     geometry: PropTypes.instanceOf(THREE.Geometry).isRequired,
+    dice: PropTypes.array.isRequired
   };
 
   constructor (props, context) {
@@ -124,11 +125,13 @@ export default class Die extends React.Component {
   }
 
   createDie = () => {
+    console.log('createDie');
     const {
       group
     } = this.refs;
 
     const {
+      dice,
       geometry
     } = this.props;
 
@@ -137,19 +140,33 @@ export default class Die extends React.Component {
     this.die.receiveShadow = true;
     this.die.name = 'die';
     group.add(this.die);
+    dice.push(this.die);
   }
 
   removeDie = () => {
+    console.log('removeDie');
+    const {
+      dice
+    } = this.props;
+
     const {
       group
     } = this.refs;
 
     group.remove(this.die);
+    dice.splice(dice.indexOf(this.die), 1);
   }
 
   componentDidMount() {
-    console.log('--------------die did mount');
+    const {
+      dice
+    } = this.props;
+
     this.createDie();
+  }
+
+  componentWillUnmount() {
+    this.removeDie();
   }
 
   componentDidUpdate(prevProps, prevState) {

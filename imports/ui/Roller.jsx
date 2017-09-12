@@ -9,6 +9,8 @@ import Die from './Die'
 
 import OrbitControls from 'three-orbitcontrols'
 
+// Alternatively, can you rotate your scene by 90 degrees as a work-around?
+
 export default class Roller extends Component {
   static propTypes = {
     width: PropTypes.number.isRequired,
@@ -24,10 +26,7 @@ export default class Roller extends Component {
       height,
     } = props;
 
-    this.state = {
-      meshStates: []
-    }
-
+    
     // settings
     this.rolling = false;
     this.bodies = [];
@@ -43,7 +42,7 @@ export default class Roller extends Component {
     this.deskColor = 'green';
     this.deskSpecular = 'yellow';
     this.deskShininess = 2;
-    this.repeat = new THREE.Vector2(10, 10);
+    this.repeat = new THREE.Vector2(10, 20);
     this.throwVector = {};
     this.boost = 0;
     this.w = width / 4;
@@ -54,7 +53,7 @@ export default class Roller extends Component {
     this.cameraPosition = new THREE.Vector3(0, 0, this.wh);
     this.mw = Math.max(this.w, this.h);
     this.lightPosition = new THREE.Vector3(-this.mw / 2, this.mw / 2, this.mw * 2);
-    this.lightTarget = new THREE.Vector3(0, -10, 0);
+    this.lightTarget = new THREE.Vector3(0, 0, 0);
     this.shadow_map_type = THREE.PCFSoftShadowMap;
     this.wrapping = THREE.RepeatWrapping;
     this.selector_back_colors = {
@@ -64,6 +63,11 @@ export default class Roller extends Component {
     };
     this.raycaster = new THREE.Raycaster();
     this.mouse = new THREE.Vector2();
+    this.dice = [];
+    
+    this.state = {
+      meshStates: []
+    }
   }
 
   _onAnimate = () => {
@@ -397,7 +401,6 @@ export default class Roller extends Component {
       axis.a * Math.PI * 2
     );
 
-    
     this.bodies.push(body);
     this.geometries.push(geo);
     this.world.add(body);
@@ -493,7 +496,6 @@ export default class Roller extends Component {
     this.bodies.forEach((body) => {
       if (body.position.z > (avg + 1)) {
         rollOk = false;
-        console.error('this die has\'t rolled properly');
       }
     });
     return rollOk;
@@ -501,6 +503,7 @@ export default class Roller extends Component {
 
   get_face_values = (filter) => {
     let values = [];
+    // top, bottom, left, right, front, back
     switch (filter) {
       case 1: 
       values = [1, 6, 2, 5, 3, 4]
@@ -509,30 +512,28 @@ export default class Roller extends Component {
       values = [2, 5, 6, 1, 3, 4]
       break;
       case 3: 
-      values = [3, 4, 2, 5, 1, 6]
+      values = [3, 4, 6, 1, 5, 2]
       break;
       case 4: 
-      values = [4, 3, 2, 5, 1, 6]
+      values = [4, 3, 6, 1, 2, 5]
       break;
       case 5: 
       values = [5, 2, 6, 1, 4, 3]
       break;
       case 6: 
-      values = [6, 1, 5, 2, 4, 3]
+      values = [6, 1, 2, 5, 4, 3]
       break;
     }
     return values;
   }
   
   shift_dice_faces(geometry, value, res, index) {
-    
     const r = [1, 6];
     const matIndexes = [2,3,4,5,6,7];
     if (!(value >= r[0] && value <= r[1])) return;
     const num = value - res;
     const geom = geometry.clone();
     
-    // top, bottom, left, right, front, back
     const presentValues = this.get_face_values(res);
     const newValues = this.get_face_values(value);
    
@@ -541,6 +542,7 @@ export default class Roller extends Component {
       // if face has a material and it needs to change
       if (matindex !== 0 && num !==0) {
         if (matIndexes.indexOf(matindex) != (-1)) {
+          
           const faceIndex = presentValues.indexOf(matindex-1)
           geom.faces[i].materialIndex = newValues[faceIndex]+1;
         }
@@ -594,20 +596,6 @@ export default class Roller extends Component {
 
     const snd = new Audio('/sound/die.wav');
     snd.play();
-  }   
-
-  bind(eventname, func) {
-    const {
-      container
-    } = this.refs;
-
-    if (eventname.constructor === Array) {
-      eventname.forEach((ev) => {
-        container.addEventListener(ev, func);
-      });
-    } else { 
-      container.addEventListener(eventname, func); 
-    }
   }
 
   get_mouse_coords(event) {
@@ -658,13 +646,41 @@ export default class Roller extends Component {
     this.raycaster.setFromCamera( this.mouse, camera );
     
     // calculate objects intersecting the picking ray
-    const intersects = this.raycaster.intersectObjects( scene.children );
-    // console.log('intersects:');
+    const intersects = this.raycaster.intersectObjects( this.dice );
+    console.log(intersects);
   
     // for ( var i = 0; i < intersects.length; i++ ) {
     //   console.log(intersects[i].object.name);
     //   // intersects[i].object.material.color.set( 0xff0000 );
     // }
+  }
+
+  onKeyUp = (event) => {
+    if(this.rolling) return;
+    event.stopPropagation();6
+    // throw 1 - 6 dice after pressing 1 - 6 on a keyboard
+    switch (event.keyCode) {
+      case 49:
+        this.diceToRoll = [1];
+        break;
+      case 50:
+        this.diceToRoll = [2,2];
+        break;
+      case 51:
+        this.diceToRoll = [3,3,3];
+        break;
+      case 52:
+        this.diceToRoll = [4,4,4,4];
+        break;
+      case 53:
+        this.diceToRoll = [5,5,5,5,5];
+        break;
+      case 54:
+        this.diceToRoll = [6,6,6,6,6,6];
+        break;
+    }
+
+    this.start_throw();
   }
 
   start_throw() {
@@ -700,6 +716,10 @@ export default class Roller extends Component {
     document.body.appendChild( this.stats.domElement );
   }
 
+  listenToKeyboard() {
+    document.addEventListener("keyup", this.onKeyUp, false);
+  }
+
   componentDidMount() {
     const {
       scene
@@ -707,11 +727,13 @@ export default class Roller extends Component {
 
     // this.addOrbitControls();
     this.addStats();
-      
+    this.listenToKeyboard();
+    
     this.initCannon();
-  
-    this.diceToRoll = [6,6,6,6,6,6];
+    
+    this.diceToRoll = [1];
     this.start_throw();
+    
   }
 
   componentWillUnmount() {
@@ -727,7 +749,7 @@ export default class Roller extends Component {
     } = this.props;
     
     const {
-      meshStates,
+      meshStates
     } = this.state;
 
     const diceMeshes = meshStates.map(({position, quaternion}, i) => 
@@ -737,6 +759,7 @@ export default class Roller extends Component {
       position={position}
       quaternion={quaternion}
       geometry={this.geometries[i]}
+      dice={this.dice}
     />));
 
     return (
@@ -819,7 +842,7 @@ export default class Roller extends Component {
               fov={20}
               aspect={width / height}
               near={1}
-              far={this.wh*1.3}
+              far={this.wh*3}
               position={this.cameraPosition}
             />
             
@@ -844,7 +867,7 @@ export default class Roller extends Component {
             
             <ambientLight
               color={this.ambient_light_color}
-              intensity={1.2}
+              intensity={1.5}
             />
             
             {diceMeshes}

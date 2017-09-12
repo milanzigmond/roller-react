@@ -8,11 +8,11 @@
     "babel-runtime": "^6.20.0",
     "cannon": "^0.6.2",
     "meteor-node-stubs": "~0.2.4",
+    "orbit-controls-es6": "^1.0.10",
     "react": "^15.6.1",
     "react-dom": "^15.6.1",
     "react-three-renderer": "^3.2.1",
-    "three": "^0.86.0",
-    "three-orbitcontrols": "^1.2.1"
+    "three": "^0.86.0"
   },
   "devDependencies": {
     "eslint-config-airbnb": "^15.1.0",
